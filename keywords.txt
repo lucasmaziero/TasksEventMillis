@@ -1,0 +1,33 @@
+#######################################
+# Syntax Coloring Map For TasksEventMillis
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+TasksEventMillis	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+add	KEYWORD2
+setInterval	KEYWORD2
+start	KEYWORD2
+stop	KEYWORD2
+reset	KEYWORD2
+isEnabled	KEYWORD2
+getNumTasks	KEYWORD2
+handle	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+TASK_ADD_FAIL	LITERAL1
+
+TASK_IMMEDIATE	LITERAL1
+TASK_MILLISECOND	LITERAL1
+TASK_SECOND LITERAL1  
+TASK_MINUTE	LITERAL1
+TASK_HOUR	LITERAL1
