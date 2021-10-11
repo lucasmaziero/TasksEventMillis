@@ -6,15 +6,17 @@ EMAIL: lucas.mazie.ro@hotmail.com or lucasmaziero@foxiot.com.br
 CITY: Santa Maria - Rio Grande do Sul - Brasil
 FUNTATION: Fox IoT (www.foxiot.com.br)
 ***************************************************************************
-Version: 1.0.0
+Version: 1.0.1
 Date: 23/09/2021
-Modified: xx/xx/20xx
+Modified: 12/11/2021
 ***************************************************************************
 Code base: https://github.com/renatoferreirarenatoferreira/ebl-arduino/tree/master/TimedEvent
 ***************************************************************************
 CHANGELOG:
-* 22/09/2021 (1.0.0v):
+* 23/09/2021 (1.0.0v):
     -> Added improvements and simplifications;
+* 12/11/2021 (1.0.1v):
+    -> Now taskId is the function itself;
 
 ***************************************************************************
 Copyright(c) by: Lucas Maziero.
@@ -24,6 +26,7 @@ Copyright(c) by: Lucas Maziero.
 #define TasksEventMillis_h
 
 #include <Arduino.h>
+#include <stdlib.h>
 
 #define TASKS_MAX_BUFFER 15
 #define _MILLIS() millis()
@@ -36,13 +39,12 @@ Copyright(c) by: Lucas Maziero.
 #define TASK_MINUTE 60000UL
 #define TASK_HOUR 3600000UL
 
-struct TasksInfo
+struct taskInfo
 {
-	uint8_t taskId;
-	bool enabled;
+	void (*onEvent)(taskInfo *task);
 	uint32_t intervalMillis;
 	uint32_t lastEventMillis;
-	void (*onEvent)(TasksInfo *task);
+	bool enabled;
 };
 
 class TasksEventMillisClass
@@ -53,24 +55,29 @@ public:
   	***************************************************************************/
 	TasksEventMillisClass();
 	virtual ~TasksEventMillisClass();
-	int8_t add(void (*onEvent)(TasksInfo *task), uint32_t intervalMillis, bool enabled = true);
-	void setInterval(uint8_t id, uint32_t intervalMillis);
-	void start(uint8_t id);
-	void stop(uint8_t id);
-	void reset(uint8_t id);
-	bool isEnabled(uint8_t id);
+	bool add(void (*onEvent)(taskInfo *task), uint32_t intervalMillis, bool enabled = true);
+	void setInterval(void (*func)(taskInfo *task), uint32_t intervalMillis);
+	void start(void (*func)(taskInfo *task));
+	void stop(void (*func)(taskInfo *task));
+	void reset(void (*func)(taskInfo *task));
+	bool isEnabled(void (*func)(taskInfo *task));
 	uint8_t getNumTasks();
 	void handle();
 
 private:
 	/**************************************************************************
+	 Functions private
+  	***************************************************************************/
+	bool searchTaskId(void (*func)(taskInfo *task));
+
+	/**************************************************************************
 	 variables private
 	***************************************************************************/
-	uint8_t _count = 0;
-	TasksInfo *tasks = NULL, *currentTask = NULL;
+	uint8_t _numTasks = 0;
+	taskInfo *tasks = NULL, *currentTask = NULL;
 };
 
 // Global instance
 extern TasksEventMillisClass TasksEventMillis;
 
-#endif  /* TasksEventMillis_h */
+#endif /* TasksEventMillis_h */

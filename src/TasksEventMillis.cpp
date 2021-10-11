@@ -6,15 +6,17 @@ EMAIL: lucas.mazie.ro@hotmail.com or lucasmaziero@foxiot.com.br
 CITY: Santa Maria - Rio Grande do Sul - Brasil
 FUNTATION: Fox IoT (www.foxiot.com.br)
 ***************************************************************************
-Version: 1.0.0
+Version: 1.0.1
 Date: 23/09/2021
-Modified: xx/xx/20xx
+Modified: 12/11/2021
 ***************************************************************************
 Code base: https://github.com/renatoferreirarenatoferreira/ebl-arduino/tree/master/TimedEvent
 ***************************************************************************
 CHANGELOG:
-* 22/09/2021 (1.0.0v):
+* 23/09/2021 (1.0.0v):
     -> Added improvements and simplifications;
+* 12/11/2021 (1.0.1v):
+    -> Now taskId is the function itself;
 
 ***************************************************************************
 Copyright(c) by: Lucas Maziero.
@@ -24,7 +26,6 @@ Copyright(c) by: Lucas Maziero.
 
 TasksEventMillisClass::TasksEventMillisClass()
 {
-
 }
 
 TasksEventMillisClass::~TasksEventMillisClass()
@@ -32,80 +33,96 @@ TasksEventMillisClass::~TasksEventMillisClass()
 	free(tasks);
 }
 
-int8_t TasksEventMillisClass::add(void (*onEvent)(TasksInfo *task), uint32_t intervalMillis, bool enabled)
+bool TasksEventMillisClass::add(void (*onEvent)(taskInfo *task), uint32_t intervalMillis, bool enabled)
 {
 	// Check max tasks
-	if (_count > TASKS_MAX_BUFFER - 1)
-		return -1;
+	if (_numTasks > TASKS_MAX_BUFFER - 1)
+		return false;
 
 	// Alloc dynamically memory
-	if (_count > 0)
-		tasks = (TasksInfo *)realloc(tasks, sizeof(TasksInfo) * (_count + 1));
+	if (_numTasks > 0)
+		tasks = (taskInfo *)realloc(tasks, sizeof(taskInfo) * (_numTasks + 1));
 	else
-		tasks = (TasksInfo *)malloc(sizeof(TasksInfo));
+		tasks = (taskInfo *)malloc(sizeof(taskInfo));
 
 	// Error allocation of memory
 	if (tasks == NULL)
-		return -1;
+		return false;
 
-	// Select pointer timer in memory
-	currentTask = tasks + _count;
+	// Select pointer task in memory
+	currentTask = tasks + _numTasks;
 
 	// Set parameters
-	currentTask->taskId = _count;
-	currentTask->intervalMillis = intervalMillis;
 	currentTask->onEvent = onEvent;
-	currentTask->enabled = enabled;
+	currentTask->intervalMillis = intervalMillis;
 	currentTask->lastEventMillis = _MILLIS();
+	currentTask->enabled = enabled;
 
 	// Next index
-	_count++;
+	_numTasks++;
 
-	return currentTask->taskId;
+	return true;
 }
 
-void TasksEventMillisClass::setInterval(uint8_t id, uint32_t intervalMillis)
+bool TasksEventMillisClass::searchTaskId(void (*func)(taskInfo *task))
 {
-	currentTask = tasks + id;
-	currentTask->intervalMillis = intervalMillis;
+	for (uint8_t index = 0; index < _numTasks; index++)
+	{
+		// Select pointer task in memory
+		currentTask = tasks + index;
+
+		// Check if task id exist in list
+		if (currentTask->onEvent == func)
+			return true;
+	}
+	return false;
 }
 
-void TasksEventMillisClass::start(uint8_t id)
+void TasksEventMillisClass::setInterval(void (*func)(taskInfo *task), uint32_t intervalMillis)
 {
-	currentTask = tasks + id;
-	if (!currentTask->enabled)
+	if (searchTaskId(func))
+		currentTask->intervalMillis = intervalMillis;
+}
+
+void TasksEventMillisClass::start(void (*func)(taskInfo *task))
+{
+	if (searchTaskId(func))
+	{
+		if (!currentTask->enabled)
+			currentTask->lastEventMillis = _MILLIS();
+		currentTask->enabled = true;
+	}
+}
+
+void TasksEventMillisClass::stop(void (*func)(taskInfo *task))
+{
+	if (searchTaskId(func))
+		currentTask->enabled = false;
+}
+
+void TasksEventMillisClass::reset(void (*func)(taskInfo *task))
+{
+	if (searchTaskId(func))
 		currentTask->lastEventMillis = _MILLIS();
-	currentTask->enabled = true;
 }
 
-void TasksEventMillisClass::stop(uint8_t id)
+bool TasksEventMillisClass::isEnabled(void (*func)(taskInfo *task))
 {
-	currentTask = tasks + id;
-	currentTask->enabled = false;
-}
-
-void TasksEventMillisClass::reset(uint8_t id)
-{
-	currentTask = tasks + id;
-	currentTask->lastEventMillis = _MILLIS();
-}
-
-bool TasksEventMillisClass::isEnabled(uint8_t id)
-{
-	currentTask = tasks + id;
-	return currentTask->enabled;
+	if (searchTaskId(func))
+		return currentTask->enabled;
+	return false;
 }
 
 uint8_t TasksEventMillisClass::getNumTasks()
 {
-	return _count;
+	return _numTasks;
 }
 
 void TasksEventMillisClass::handle()
 {
-	for (uint8_t index = 0; index < _count; index++)
+	for (uint32_t index = 0; index < _numTasks; index++)
 	{
-		// Select pointer timer in memory
+		// Select pointer task in memory
 		currentTask = tasks + index;
 
 		if (currentTask->enabled)

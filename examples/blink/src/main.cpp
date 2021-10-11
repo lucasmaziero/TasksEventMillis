@@ -56,9 +56,6 @@
 // Pin mapping LED
 #define PIN_LED 2
 
-// Task ID`s
-int8_t INDEX_TASK_BLINK_LED;
-
 // Counter blink LED
 uint32_t counter = 0;
 
@@ -69,8 +66,8 @@ uint32_t counter = 0;
 /**************************************************************************
   PROTOTYPE OF FUNCTIONS
 **************************************************************************/
-void blink(TasksInfo *task);
-void timePrint(TasksInfo *task);
+void blink(taskInfo *task);
+void timePrint(taskInfo *task);
 
 /**************************************************************************
   FUNCTION SETUP
@@ -85,7 +82,7 @@ void setup()
   DebugBegin(115200);
 
   // Create TasksEventMillis
-  INDEX_TASK_BLINK_LED = TasksEventMillis.add(blink, 0.1 * TASK_SECOND);
+  TasksEventMillis.add(blink, 0.1 * TASK_SECOND);
   TasksEventMillis.add(timePrint, 1 * TASK_SECOND);
 
   DebugPrint("\nTask blink with ");
@@ -114,7 +111,7 @@ void loop()
 /**************************************************************************
   FUNCTION BLINK LED
 **************************************************************************/
-void blink(TasksInfo *task)
+void blink(taskInfo *task)
 {
   bool status = digitalRead(PIN_LED);
   digitalWrite(PIN_LED, !status);
@@ -127,8 +124,9 @@ void blink(TasksInfo *task)
   if (counter > 49)
   {
     task->enabled = false;
+    //TasksEventMillis.stop(blink);
     digitalWrite(PIN_LED, LOW);
-    DebugPrintln("Task with id " + String(task->taskId) + " is stoped!");
+    DebugPrintln("Task with id " + String((uint32_t)task->onEvent, HEX) + " is stoped!");
   }
   counter++;
 }
@@ -136,7 +134,7 @@ void blink(TasksInfo *task)
 /**************************************************************************
   FUNCTION PRINT TIMER
 **************************************************************************/
-void timePrint(TasksInfo *task)
+void timePrint(taskInfo *task)
 {
   DebugPrint("Time: ");
   DebugPrint(millis() / 1000);
